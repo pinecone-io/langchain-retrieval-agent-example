@@ -4,7 +4,7 @@ import { Parser, transforms } from "json2csv";
 import fs from "fs";
 import fetch from "cross-fetch";
 
-const { unwind } = transforms;
+const { unwind, flatten } = transforms;
 
 const jsonToCSV = async (
   url: string,
@@ -14,11 +14,8 @@ const jsonToCSV = async (
   const response = await fetch(url);
   const { data } = await response.json();
 
-  // Select the top level data
-
-  // TODO: Make generic
-  const topLevelData = data[0].paragraphs;
-  const transforms = [unwind({ paths: unwindFieldsPaths })];
+  const topLevelData = data;
+  const transforms = [unwind({ paths: [...unwindFieldsPaths] }), flatten({ objects: true, arrays: true })];
 
   const json2csvParser = new Parser({ fields, transforms });
   const csv = json2csvParser.parse(topLevelData);
@@ -47,13 +44,12 @@ const dataFrameFromURL = async (
 
   const df: dfd.DataFrame = (await dfd.readCSV(filePath)) as dfd.DataFrame;
 
-  // delete the file in try catch, asynchronusly
+  // delete the file in try catch, asynchronously
   try {
     fs.unlinkSync(filePath);
   } catch (err) {
     console.error(err);
   }
-
   return df;
 };
 

@@ -1,3 +1,4 @@
+/* eslint-disable dot-notation */
 import * as dotenv from "dotenv";
 import { utils } from '@pinecone-database/pinecone';
 import { getEnv } from "utils/util.ts";
@@ -28,13 +29,15 @@ const squadData = await loadSquad();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const records = dfd.toJSON(squadData.head()) as any[];
 
+console.log(records);
+
 const documents = records.map((record) => {
   const document = new Document({
     pageContent: record.context,
     metadata: {
-      id: record["qas.id"],
-      question: record["qas.question"],
-      answer: record["qas.answers.text"],
+      id: record["id"],
+      question: record["question"],
+      answer: record["answer"],
     },
   });
 

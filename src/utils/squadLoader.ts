@@ -7,15 +7,19 @@ const loadSquad = async () => {
   const df = await dataFrameFromURL(
     url,
     [
-      "context",
-      "qas.id",
-      "qas.question",
-      "qas.answers.answer_start",
-      "qas.answers.text",
+      "title",
+      "paragraphs.context",
+      "paragraphs.qas.id",
+      "paragraphs.qas.question",
+      "paragraphs.qas.answers.text",
     ],
-    ["qas", "qas.answers"]
+    ["paragraphs", "paragraphs.qas", "paragraphs.qas.answers"]
   );
 
+  df.rename({ "paragraphs.context": "context" }, { inplace: true });
+  df.rename({ "paragraphs.qas.id": "id" }, { inplace: true });
+  df.rename({ "paragraphs.qas.question": "question" }, { inplace: true });
+  df.rename({ "paragraphs.qas.answers.text": "answer" }, { inplace: true });
   return df;
 };
 
