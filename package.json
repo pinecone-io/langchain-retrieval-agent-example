@@ -1,0 +1,55 @@
+{
+  "name": "langchain-ts-starter",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "./dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "tsup": "tsup",
+    "build": "tsup",
+    "start": "tsx -r dotenv/config src/index.ts",
+    "lint": "eslint src",
+    "lint:fix": "npm run lint --fix",
+    "format": "prettier --write \"**/*.ts\"",
+    "format:check": "prettier --list-different \"**/*.ts\""
+  },
+  "keywords": [
+    "langchain",
+    "starter",
+    "template",
+    "node",
+    "typescript",
+    "llm"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@pinecone-database/pinecone": "^0.1.6",
+    "@xenova/transformers": "^2.0.2",
+    "cross-fetch": "^3.1.6",
+    "danfojs-node": "^1.1.2",
+    "dotenv": "^16.0.3",
+    "json2csv": "^6.0.0-alpha.2",
+    "langchain": "^0.0.85",
+    "tsup": "^6.7.0"
+  },
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.2",
+    "@types/js-yaml": "^4",
+    "@types/json2csv": "^5.0.3",
+    "@types/node": "^18.15.5",
+    "@typescript-eslint/eslint-plugin": "^5.51.0",
+    "@typescript-eslint/parser": "^5.51.0",
+    "eslint": "^8.33.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.8.3",
+    "tsx": "^3.12.3",
+    "typescript": "^5.0.4"
+  }
+}
