@@ -1,14 +1,11 @@
 import { randomUUID } from "crypto";
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { pipeline } from "@xenova/transformers";
-// eslint-disable-next-line import/no-extraneous-dependencies
+import { Pipeline, pipeline } from "@xenova/transformers";
 import { Vector } from "@pinecone-database/pinecone";
-
 import { sliceIntoChunks } from "./utils/util.js";
 
 
 class Embedder {
-  private pipe: any;
+  private pipe: Pipeline;
 
   async init() {
     this.pipe = await pipeline(

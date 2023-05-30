@@ -12,8 +12,6 @@ const jsonToCSV = async (
   unwindFieldsPaths: string[]
 ): Promise<string> => {
   const response = await fetch(url);
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
   const { data } = await response.json();
 
   // Select the top level data

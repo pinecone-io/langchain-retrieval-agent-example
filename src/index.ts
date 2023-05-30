@@ -25,6 +25,7 @@ const pineconeIndex = pineconeClient.Index(indexName);
 
 const squadData = await loadSquad();
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const records = dfd.toJSON(squadData.head()) as any[];
 
 const documents = records.map((record) => {
@@ -57,23 +58,3 @@ const res = await chain.call({
   query: "What is the Grotto at Notre Dame?",
 });
 console.log({ res });
-
-// const documents = records.map((record) => ({});
-
-
-// await embedder.init();
-// const embedded = await embedder.embed("Hello world!");
-// console.log(embedded);
-
-// const model = new OpenAI({
-//   modelName: "gpt-3.5-turbo",
-//   openAIApiKey: process.env.OPENAI_API_KEY,
-// });
-
-// const res = await model.call(
-//   "What's a good idea for an application to build with GPT-3?"
-// );
-
-// console.log(res);
-
-
