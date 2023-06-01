@@ -36,7 +36,7 @@ const dataFrameFromURL = async (
   try {
     fs.writeFile(filePath, csv, (err) => {
       if (err) throw err;
-      console.log("The file has been saved!");
+      // console.log("The file has been saved!");
     });
   } catch (err) {
     console.log(err);

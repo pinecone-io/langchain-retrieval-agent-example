@@ -14,10 +14,19 @@ module.exports = {
   rules: {
     "@typescript-eslint/explicit-module-boundary-types": 0,
     "@typescript-eslint/no-empty-function": 0,
+    "@typescript-eslint/no-empty-any": 0,
     "@typescript-eslint/no-shadow": 0,
     "@typescript-eslint/no-use-before-define": ["error", "nofunc"],
     "@typescript-eslint/no-unused-vars": ["warn", { args: "none" }],
     camelcase: 0,
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        devDependencies: false,
+        optionalDependencies: false,
+        peerDependencies: false,
+      },
+    ],
     "class-methods-use-this": 0,
     "import/extensions": 0,
     "import/no-unresolved": 0,

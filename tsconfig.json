@@ -12,9 +12,6 @@
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": "./src",
-    // "paths": {
-    //   "@/*": ["./*"]
-    // },
     "declaration": true,
     "experimentalDecorators": true,
     "noImplicitReturns": true,

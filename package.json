@@ -10,7 +10,8 @@
   "scripts": {
     "tsup": "tsup",
     "build": "tsup",
-    "start": "tsx -r dotenv/config src/index.ts",
+    "index": "tsx -r dotenv/config src/index.ts",
+    "chat": "tsx -r dotenv/config src/chat.ts",
     "lint": "eslint src",
     "lint:fix": "npm run lint --fix",
     "format": "prettier --write \"**/*.ts\"",
@@ -29,15 +30,19 @@
   "dependencies": {
     "@pinecone-database/pinecone": "^0.1.6",
     "@xenova/transformers": "^2.0.2",
+    "chalk": "^5.2.0",
+    "cli-progress": "^3.12.0",
     "cross-fetch": "^3.1.6",
     "danfojs-node": "^1.1.2",
     "dotenv": "^16.0.3",
     "json2csv": "^6.0.0-alpha.2",
     "langchain": "^0.0.85",
+    "onnxruntime-node": "^1.15.0",
     "tsup": "^6.7.0"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.2",
+    "@types/cli-progress": "^3.11.0",
     "@types/js-yaml": "^4",
     "@types/json2csv": "^5.0.3",
     "@types/node": "^18.15.5",

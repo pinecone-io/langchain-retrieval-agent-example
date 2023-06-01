@@ -1,63 +1,68 @@
+/* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable dot-notation */
 import * as dotenv from "dotenv";
-import { utils } from '@pinecone-database/pinecone';
+import { Vector, utils } from '@pinecone-database/pinecone';
 import { getEnv } from "utils/util.ts";
 import { getPineconeClient } from "utils/pinecone.ts";
+import cliProgress from "cli-progress";
 import { Document } from 'langchain/document';
 import * as dfd from "danfojs-node";
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { PineconeStore } from "langchain/vectorstores/pinecone";
-import { OpenAI } from "langchain/llms/openai";
-import { RetrievalQAChain } from "langchain/chains";
-
-import { loadSquad } from "./utils/squadLoader.js";
-
-const { createIndexIfNotExists } = utils;
+import { embedder } from "embeddings.ts";
+import { SquadRecord, loadSquad } from "./utils/squadLoader.js";
 
 dotenv.config();
+const { createIndexIfNotExists, chunkedUpsert } = utils;
 
+// Index seetup
 const indexName = getEnv("PINECONE_INDEX");
-
 const pineconeClient = await getPineconeClient();
 
-await createIndexIfNotExists(pineconeClient, indexName, 1536);
+const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
-const pineconeIndex = pineconeClient.Index(indexName);
+async function getChunk(df: dfd.DataFrame, start: number, size: number): Promise<dfd.DataFrame> {
+  // eslint-disable-next-line no-return-await
+  return await df.head(start + size).tail(size);
+}
 
-const squadData = await loadSquad();
+async function* processInChunks(dataFrame: dfd.DataFrame, chunkSize: number): AsyncGenerator<Document[]> {
+  for (let i = 0; i < dataFrame.shape[0]; i += chunkSize) {
+    const chunk = await getChunk(dataFrame, i, chunkSize);
+    const records = dfd.toJSON(chunk) as SquadRecord[];
+    yield records.map((record: SquadRecord) => new Document({
+      pageContent: record.context,
+      metadata: {
+        id: record["id"],
+        question: record["question"],
+        answer: record["answer"],
+        context: record["context"],
+      },
+    }));
+  }
+}
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const records = dfd.toJSON(squadData.head()) as any[];
+async function embedAndUpsert(dataFrame: dfd.DataFrame, chunkSize: number) {
+  const chunkGenerator = processInChunks(dataFrame, chunkSize);
+  const index = pineconeClient.Index(indexName);
 
-console.log(records);
 
-const documents = records.map((record) => {
-  const document = new Document({
-    pageContent: record.context,
-    metadata: {
-      id: record["id"],
-      question: record["question"],
-      answer: record["answer"],
-    },
-  });
+  for await (const documents of chunkGenerator) {
+    await embedder.embedBatch(documents, chunkSize, async (embeddings: Vector[]) => {
+      await chunkedUpsert(index, embeddings, "default");
+      progressBar.increment(embeddings.length);
+    });
+  }
+}
 
-  return document;
-});
+try {
+  const squadData = await loadSquad();
+  await createIndexIfNotExists(pineconeClient, indexName, 384);
+  progressBar.start(squadData.shape[0], 0);
+  await embedder.init("Xenova/all-MiniLM-L6-v2");
+  await embedAndUpsert(squadData, 1);
 
-console.log(documents);
+  progressBar.stop();
+  console.log(`Inserted ${progressBar.getTotal()} documents into index ${indexName}`);
 
-await PineconeStore.fromDocuments(documents, new OpenAIEmbeddings(), {
-  pineconeIndex,
-});
-
-const vectorStore = await PineconeStore.fromExistingIndex(
-  new OpenAIEmbeddings(),
-  { pineconeIndex }
-);
-const model = new OpenAI({});
-
-const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever());
-const res = await chain.call({
-  query: "What is the Grotto at Notre Dame?",
-});
-console.log({ res });
+} catch (error) {
+  console.error(error);
+}

@@ -1,9 +1,10 @@
+import * as dfd from "danfojs-node";
 import { dataFrameFromURL } from "./dataLoader.js";
 
 const url =
   "https://rajpurkar.github.io/SQuAD-explorer/dataset/train-v1.1.json";
 
-const loadSquad = async () => {
+const loadSquad = async (): Promise<dfd.DataFrame> => {
   const df = await dataFrameFromURL(
     url,
     [
@@ -23,4 +24,11 @@ const loadSquad = async () => {
   return df;
 };
 
-export { loadSquad };
+interface SquadRecord {
+  context: string;
+  id: string;
+  question: string;
+  answer: string;
+}
+
+export { loadSquad, SquadRecord };
