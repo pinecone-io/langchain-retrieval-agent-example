@@ -18,7 +18,8 @@ class Embedder {
   async init(modelName: string) {
     this.pipe = await pipeline(
       "embeddings",
-      modelName
+      modelName,
+      { quantized: false }
     );
   }
 

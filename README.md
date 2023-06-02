@@ -145,31 +145,25 @@ console.log(result);
 
 We should see the following results:
 
-```
+```json
 [
-  Document {
-    pageContent: 'The College of Engineering was established in 1920, however, early courses in civil and mechanical engineering were a part of the College of Science since the 1870s. Today the college, housed in the Fitzpatrick, Cushing, and Stinson-Remick Halls of Engineering, includes five departments of study – aerospace and mechanical engineering, chemical and biomolecular engineering, civil engineering and geological sciences, computer science and engineering, and electrical engineering – with eight B.S. degrees offered. Additionally, the college offers five-year dual degree programs with the Colleges of Arts and Letters and of Business awarding additional B.A. and Master of Business Administration (MBA) degrees, respectively.',
-    metadata: {
-      answer: 'the 1870s',
-      id: '5733a6424776f41900660f52',
-      question: 'The College of Science began to offer civil engineering courses beginning at what time at Notre Dame?'
-    }
+  {
+    "answer": "a Marian place of prayer and reflection",
+    "context": "The College of Engineering was established in 1920, however, early courses in civil and mechanical engineering were a part of the College of Science since the 1870s. Today the college, housed in the Fitzpatrick, Cushing, and Stinson-Remick Halls of Engineering, includes five departments of study – aerospace and mechanical engineering, chemical and biomolecular engineering, civil engineering and geological sciences, computer science and engineering, and electrical engineering – with eight B.S. degrees offered. Additionally, the college offers five-year dual degree programs with the Colleges of Arts and Letters and of Business awarding additional B.A. and Master of Business Administration (MBA) degrees, respectively.",
+    "id": "5733be284776f41900661181",
+    "question": "What is the Grotto at Notre Dame?"
   },
-  Document {
-    pageContent: 'The College of Engineering was established in 1920, however, early courses in civil and mechanical engineering were a part of the College of Science since the 1870s. Today the college, housed in the Fitzpatrick, Cushing, and Stinson-Remick Halls of Engineering, includes five departments of study – aerospace and mechanical engineering, chemical and biomolecular engineering, civil engineering and geological sciences, computer science and engineering, and electrical engineering – with eight B.S. degrees offered. Additionally, the college offers five-year dual degree programs with the Colleges of Arts and Letters and of Business awarding additional B.A. and Master of Business Administration (MBA) degrees, respectively.',
-    metadata: {
-      answer: 'five',
-      id: '5733a6424776f41900660f50',
-      question: 'How many departments are within the Stinson-Remick Hall of Engineering?'
-    }
+  {
+    "answer": "a golden statue of the Virgin Mary",
+    "context": "All of Notre Dame's undergraduate students are a part of one of the five undergraduate colleges at the school or are in the First Year of Studies program. The First Year of Studies program was established in 1962 to guide incoming freshmen in their first year at the school before they have declared a major. Each student is given an academic advisor from the program who helps them to choose classes that give them exposure to any major in which they are interested. The program also includes a Learning Resource Center which provides time management, collaborative learning, and subject tutoring. This program has been recognized previously, by U.S. News & World Report, as outstanding.",
+    "id": "5733be284776f4190066117e",
+    "question": "What sits on top of the Main Building at Notre Dame?"
   },
-  Document {
-    pageContent: 'The College of Engineering was established in 1920, however, early courses in civil and mechanical engineering were a part of the College of Science since the 1870s. Today the college, housed in the Fitzpatrick, Cushing, and Stinson-Remick Halls of Engineering, includes five departments of study – aerospace and mechanical engineering, chemical and biomolecular engineering, civil engineering and geological sciences, computer science and engineering, and electrical engineering – with eight B.S. degrees offered. Additionally, the college offers five-year dual degree programs with the Colleges of Arts and Letters and of Business awarding additional B.A. and Master of Business Administration (MBA) degrees, respectively.',
-    metadata: {
-      answer: 'the College of Science',
-      id: '5733a6424776f41900660f4f',
-      question: 'Before the creation of the College of Engineering similar studies were carried out at which Notre Dame college?'
-    }
+  {
+    "answer": "the 1870s",
+    "context": "In 1919 Father James Burns became president of Notre Dame, and in three years he produced an academic revolution that brought the school up to national standards by adopting the elective system and moving away from the university's traditional scholastic and classical emphasis. By contrast, the Jesuit colleges, bastions of academic conservatism, were reluctant to move to a system of electives. Their graduates were shut out of Harvard Law School for that reason. Notre Dame continued to grow over the years, adding more colleges, programs, and sports teams. By 1921, with the addition of the College of Commerce, Notre Dame had grown from a small college to a university with five colleges and a professional law school. The university continued to expand and add new residence halls and buildings with each subsequent president.",
+    "id": "5733a6424776f41900660f52",
+    "question": "The College of Science began to offer civil engineering courses beginning at what time at Notre Dame?"
   }
 ]
 ```

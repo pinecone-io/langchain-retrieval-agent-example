@@ -56,6 +56,7 @@ async function embedAndUpsert(dataFrame: dfd.DataFrame, chunkSize: number) {
 
 try {
   const squadData = await loadSquad();
+  // squadData.print();
   await createIndexIfNotExists(pineconeClient, indexName, 384);
   progressBar.start(squadData.shape[0], 0);
   await embedder.init("Xenova/all-MiniLM-L6-v2");
