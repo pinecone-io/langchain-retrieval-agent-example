@@ -13,11 +13,12 @@ import { SquadRecord, loadSquad } from "./utils/squadLoader.js";
 dotenv.config();
 const { createIndexIfNotExists, chunkedUpsert } = utils;
 
-// Index seetup
+const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+
+// Index setup
 const indexName = getEnv("PINECONE_INDEX");
 const pineconeClient = await getPineconeClient();
 
-const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
 async function getChunk(df: dfd.DataFrame, start: number, size: number): Promise<dfd.DataFrame> {
   // eslint-disable-next-line no-return-await
