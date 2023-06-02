@@ -6,7 +6,6 @@ import { ChainTool } from "langchain/tools";
 import { getPineconeClient } from "utils/pinecone.ts";
 import { getEnv } from "utils/util.ts";
 import { TransformersJSEmbedding } from "embeddings.ts";
-import { QueryRequest } from "@pinecone-database/pinecone";
 
 const indexName = getEnv("PINECONE_INDEX");
 
