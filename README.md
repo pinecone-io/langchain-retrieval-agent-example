@@ -215,7 +215,7 @@ console.log(`${result.output}`);
 We should see something like this:
 
 ```
-The University of Notre Dame has a First Year of Studies program established in 1962, provides academic advisors, and has been recognized by U.S. News & World Report as outstanding.
+The University of Notre Dame is a Catholic research university located in South Bend, Indiana, United States. It is consistently ranked among the top twenty universities in the United States. It has four colleges (Arts and Letters, Science, Engineering, Business) and an Architecture School. Its graduate program has more than 50 master's, doctoral and professional degree programs. It also has a First Year of Studies program and an Office of Sustainability. Father Gustavo Gutierrez, the founder of Liberation Theology is a current faculty member.
 ```
 
 Looks great! We're also able to ask questions that refer to previous interactions in the conversation and the agent is able to refer to the conversation history to as a source of information.
