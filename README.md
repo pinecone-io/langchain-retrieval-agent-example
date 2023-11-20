@@ -8,13 +8,38 @@ Merging these methods gives us the best of both worlds. Let's see how that is do
 
 (See our [LangChain Handbook](https://pinecone.io/learn/langchain) for more on LangChain).
 
-To begin, we must install the prerequisite libraries that we will be using in this applications.
+## Setup
 
-To do so, simply run the following command:
+Prerequisites:
+- `Node.js` version >=18.0.0
+
+Clone the repository and install the prerequisite libraties that we will be using in this application.
 
 ```bash
+git clone git@github.com:pinecone-io/langchain-retrieval-agent-example.git
+cd langchain-retrieval-agent-example
 npm install
 ```
+
+### Configuration
+
+In order to run this example, you have to supply the Pinecone credentials needed to interact with the Pinecone API. You can find these credentials in the Pinecone web console. This project uses `dotenv` to easily load values from the `.env` file into the environment when executing. 
+
+Copy the template file:
+
+```sh
+cp .env.example .env
+```
+
+And fill in your API key and environment details:
+
+```sh
+PINECONE_API_KEY=<your-api-key>
+PINECONE_ENVIRONMENT=<your-environment>
+PINECONE_INDEX=langchain-retrieval-agent
+```
+
+`PINECONE_INDEX` is the name of the index where this demo will store and query embeddings. You can change `PINECONE_INDEX` to any name you like, but make sure the name not going to collide with any indexes you are already using.
 
 ## Importing the Libraries
 
