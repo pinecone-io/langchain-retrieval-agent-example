@@ -34,6 +34,7 @@ cp .env.example .env
 And fill in your API key and environment details:
 
 ```sh
+OPENAI_API_KEY=<your-api-key>
 PINECONE_API_KEY=<your-api-key>
 PINECONE_ENVIRONMENT=<your-environment>
 PINECONE_INDEX=langchain-retrieval-agent
