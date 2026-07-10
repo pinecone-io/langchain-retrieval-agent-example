@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: CI only needs to read the checked-out code. No write scopes,
+# and no Pinecone/OpenAI credentials are exposed here — any live/credentialed
+# checks must be gated separately (see the test-suite issue), never in PR CI.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Lint & typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # `npm install` rather than `npm ci`: package-lock.json is currently out
+      # of sync with package.json, so `npm ci` fails. Switch this to `npm ci`
+      # once the lockfile is regenerated (see the Dependabot/lockfile issue).
+      - run: npm install
+
+      - run: npm run lint
+
+      # `tsc --noEmit` is the real type check. This example runs from source via
+      # `tsx`, so there is no bundler build step to smoke-test here.
+      - run: npm run typecheck
