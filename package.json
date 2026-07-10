@@ -1,15 +1,13 @@
 {
-  "name": "langchain-ts-starter",
+  "name": "langchain-retrieval-agent-example",
   "version": "1.0.0",
-  "description": "",
+  "description": "Example of a retrieval-augmented LangChain agent backed by a Pinecone vector index.",
   "type": "module",
-  "main": "./dist/index.js",
-  "files": [
-    "dist"
-  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pinecone-io/langchain-retrieval-agent-example.git"
+  },
   "scripts": {
-    "tsup": "tsup",
-    "build": "tsup",
     "index": "tsx -r dotenv/config src/index.ts",
     "chat": "tsx -r dotenv/config src/chat.ts",
     "typecheck": "tsc --noEmit",
@@ -22,14 +20,14 @@
     "format:check": "prettier --list-different \"**/*.ts\""
   },
   "keywords": [
+    "pinecone",
     "langchain",
-    "starter",
-    "template",
-    "node",
+    "rag",
+    "openai",
     "typescript",
-    "llm"
+    "vector-search"
   ],
-  "author": "",
+  "author": "Pinecone",
   "license": "MIT",
   "dependencies": {
     "@pinecone-database/pinecone": "^0.1.6",
@@ -41,8 +39,7 @@
     "dotenv": "^16.1.3",
     "json2csv": "^6.0.0-alpha.2",
     "langchain": "^0.0.85",
-    "onnxruntime-node": "^1.15.0",
-    "tsup": "^6.7.0"
+    "onnxruntime-node": "^1.15.0"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.2",
