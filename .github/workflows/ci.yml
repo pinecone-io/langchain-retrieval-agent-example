@@ -4,16 +4,18 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Allows the credentialed live e2e job below to be triggered manually.
+  workflow_dispatch:
 
-# Least privilege: CI only needs to read the checked-out code. No write scopes,
-# and no Pinecone/OpenAI credentials are exposed here — any live/credentialed
-# checks must be gated separately (see the test-suite issue), never in PR CI.
+# Least privilege: CI only needs to read the checked-out code. No write scopes.
+# Live Pinecone/OpenAI credentials are exposed only to the `e2e` job below, and
+# only off untrusted PRs — never to lint/typecheck/unit steps.
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Lint & typecheck
+    name: Lint, typecheck & unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,3 +35,29 @@ jobs:
       # `tsc --noEmit` is the real type check. This example runs from source via
       # `tsx`, so there is no bundler build step to smoke-test here.
       - run: npm run typecheck
+
+      # Unit tests are credential-free and run on every push + PR.
+      - run: npm run test:unit
+
+  e2e:
+    name: Live e2e (Pinecone)
+    runs-on: ubuntu-latest
+    # Never run the credentialed live suite on untrusted pull requests — only on
+    # pushes to main and manual dispatch, where repo secrets are trusted. The
+    # test itself also self-skips when the secrets are absent.
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm install
+
+      - run: npm run test:e2e
+        env:
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
