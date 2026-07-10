@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Vector } from "@pinecone-database/pinecone";
+import type { PineconeRecord } from "@pinecone-database/pinecone";
 
 // Mock the transformers pipeline so the batching logic can be tested offline,
 // without downloading a model or running inference. The mock returns a fixed
@@ -13,7 +13,7 @@ vi.mock("@xenova/transformers", () => ({
 
 // Imported after the mock is registered.
 const { embedder } = await import("../../src/embeddings.js");
-const { Document } = await import("langchain/document");
+const { Document } = await import("@langchain/core/documents");
 
 describe("Embedder.embedBatch", () => {
   beforeEach(async () => {
@@ -22,7 +22,7 @@ describe("Embedder.embedBatch", () => {
 
   it("splits documents into batches of the requested size", async () => {
     const documents = ["a", "b", "c", "d", "e"];
-    const batches: Vector[][] = [];
+    const batches: PineconeRecord[][] = [];
 
     await embedder.embedBatch(documents, 2, (embeddings) => {
       batches.push(embeddings);
@@ -34,7 +34,7 @@ describe("Embedder.embedBatch", () => {
 
   it("produces one embedding per document with the model's vector values", async () => {
     const documents = ["only-one"];
-    const collected: Vector[] = [];
+    const collected: PineconeRecord[] = [];
 
     await embedder.embedBatch(documents, 5, (embeddings) => {
       collected.push(...embeddings);
@@ -54,7 +54,7 @@ describe("Embedder.embedBatch", () => {
     const documents = [
       new Document({ pageContent: "context text", metadata: { id: "doc-42" } }),
     ];
-    const collected: Vector[] = [];
+    const collected: PineconeRecord[] = [];
 
     await embedder.embedBatch(documents, 1, (embeddings) => {
       collected.push(...embeddings);
