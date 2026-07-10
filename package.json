@@ -12,6 +12,7 @@
     "build": "tsup",
     "index": "tsx -r dotenv/config src/index.ts",
     "chat": "tsx -r dotenv/config src/chat.ts",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "lint:fix": "npm run lint --fix",
     "format": "prettier --write \"**/*.ts\"",
