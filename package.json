@@ -46,7 +46,8 @@
     "onnxruntime-node": "^1.15.0"
   },
   "overrides": {
-    "@pinecone-database/pinecone": "^8.0.0"
+    "@pinecone-database/pinecone": "^8.0.0",
+    "rollup": "4.62.2"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.2",
