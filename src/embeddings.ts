@@ -1,9 +1,15 @@
 import { randomUUID } from "crypto";
 import { FeatureExtractionPipeline, pipeline } from "@xenova/transformers";
-import { Vector } from "@pinecone-database/pinecone";
-import { Document } from 'langchain/document';
-import { EmbeddingsParams, Embeddings } from "langchain/embeddings/base";
+import { PineconeRecord, RecordMetadata } from "@pinecone-database/pinecone";
+import { Document } from "@langchain/core/documents";
+import { EmbeddingsParams, Embeddings } from "@langchain/core/embeddings";
 import { sliceIntoChunks } from "./utils/util.js";
+
+// all-MiniLM-L6-v2 needs mean pooling over tokens + L2 normalization to collapse
+// a text into a single sentence embedding. Without pooling the pipeline returns
+// the full [tokens x 384] tensor, which flattens to a wrong-sized vector that the
+// index rejects ("Vector dimension N does not match ... 384" — see issue #3).
+const POOLING_OPTIONS = { pooling: "mean", normalize: true } as const;
 
 type DocumentOrString = Document | string;
 
@@ -17,23 +23,21 @@ class Embedder {
 
   async init(modelName: string) {
     this.pipe = await pipeline(
-      "embeddings",
+      "feature-extraction",
       modelName,
       { quantized: false }
     );
   }
 
   // Embeds a text and returns the embedding
-  async embed(text: string, metadata?: Record<string, unknown>): Promise<Vector> {
-    const result = await this.pipe(text);
+  async embed(text: string, metadata?: Record<string, unknown>): Promise<PineconeRecord> {
+    const result = await this.pipe(text, POOLING_OPTIONS);
     const id = (metadata?.id as string) || randomUUID();
 
     return {
       id,
-      metadata: metadata || {
-        text,
-      },
-      values: Array.from(result.data),
+      metadata: (metadata || { text }) as RecordMetadata,
+      values: Array.from(result.data as Float32Array),
     };
   }
 
@@ -41,7 +45,7 @@ class Embedder {
   async embedBatch(
     documents: DocumentOrString[],
     batchSize: number,
-    onDoneBatch: (embeddings: Vector[]) => void
+    onDoneBatch: (embeddings: PineconeRecord[]) => void
   ) {
     const batches = sliceIntoChunks<DocumentOrString>(documents, batchSize);
     for (const batch of batches) {
@@ -59,7 +63,7 @@ class Embedder {
 
 interface TransformersJSEmbeddingParams extends EmbeddingsParams {
   modelName: string;
-  onEmbeddingDone?: (embeddings: Vector[]) => void;
+  onEmbeddingDone?: (embeddings: PineconeRecord[]) => void;
 }
 
 class TransformersJSEmbedding extends Embeddings implements TransformersJSEmbeddingParams {
@@ -74,7 +78,7 @@ class TransformersJSEmbedding extends Embeddings implements TransformersJSEmbedd
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
     this.pipe = this.pipe || await pipeline(
-      "embeddings",
+      "feature-extraction",
       this.modelName
     );
 
@@ -84,12 +88,12 @@ class TransformersJSEmbedding extends Embeddings implements TransformersJSEmbedd
 
   async embedQuery(text: string): Promise<number[]> {
     this.pipe = this.pipe || await pipeline(
-      "embeddings",
+      "feature-extraction",
       this.modelName
     );
 
-    const result = await this.pipe(text);
-    return Array.from(result.data) as number[];
+    const result = await this.pipe(text, POOLING_OPTIONS);
+    return Array.from(result.data as Float32Array) as number[];
   }
 }
 

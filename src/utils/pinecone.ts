@@ -1,24 +1,21 @@
-import { PineconeClient } from "@pinecone-database/pinecone";
+import { Pinecone } from "@pinecone-database/pinecone";
 import { config } from "dotenv";
 import { getEnv, validateEnvironmentVariables } from "./util.js";
 
 config();
 
-let pineconeClient: PineconeClient | null = null;
+let pinecone: Pinecone | null = null;
 
-// Returns a PineconeClient instance
-export const getPineconeClient: () => Promise<PineconeClient> = async () => {
+// Returns a memoized Pinecone client. The v8 (serverless) SDK constructs
+// synchronously from just an API key — there is no `.init()` and no
+// `environment`; a single key manages every region.
+export const getPineconeClient = (): Pinecone => {
   validateEnvironmentVariables();
 
-  if (pineconeClient) {
-    return pineconeClient;
+  if (pinecone) {
+    return pinecone;
   }
-  pineconeClient = new PineconeClient();
+  pinecone = new Pinecone({ apiKey: getEnv("PINECONE_API_KEY") });
 
-  await pineconeClient.init({
-    apiKey: getEnv("PINECONE_API_KEY"),
-    environment: getEnv("PINECONE_ENVIRONMENT"),
-  });
-
-  return pineconeClient;
+  return pinecone;
 };

@@ -25,10 +25,10 @@ jobs:
           node-version: 20
           cache: npm
 
-      # `npm install` rather than `npm ci`: package-lock.json is currently out
-      # of sync with package.json, so `npm ci` fails. Switch this to `npm ci`
-      # once the lockfile is regenerated (see the Dependabot/lockfile issue).
-      - run: npm install
+      # `npm ci` installs strictly from the regenerated lockfile. It also avoids
+      # the `npm install` optional-dependency bug (npm/cli#4828) that otherwise
+      # skips rollup's platform-specific native binary on the Linux runner.
+      - run: npm ci
 
       - run: npm run lint
 
@@ -54,10 +54,9 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm install
+      - run: npm ci
 
       - run: npm run test:e2e
         env:
           PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
-          PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

@@ -13,7 +13,6 @@ export const getEnv = (key: string): string => {
 
 const validateEnvironmentVariables = () => {
   getEnv("PINECONE_API_KEY");
-  getEnv("PINECONE_ENVIRONMENT");
   getEnv("PINECONE_INDEX");
 };
 
