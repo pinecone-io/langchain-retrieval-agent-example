@@ -13,6 +13,9 @@
     "index": "tsx -r dotenv/config src/index.ts",
     "chat": "tsx -r dotenv/config src/chat.ts",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:e2e": "vitest run tests/e2e",
     "lint": "eslint src",
     "lint:fix": "npm run lint --fix",
     "format": "prettier --write \"**/*.ts\"",
@@ -56,6 +59,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "prettier": "^2.8.3",
     "tsx": "^3.12.3",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "vitest": "^3.2.7"
   }
 }
