@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { FeatureExtractionPipeline, pipeline } from "@xenova/transformers";
+import { FeatureExtractionPipeline, pipeline, AutoConfig } from "@huggingface/transformers";
 import { PineconeRecord, RecordMetadata } from "@pinecone-database/pinecone";
 import { Document } from "@langchain/core/documents";
 import { EmbeddingsParams, Embeddings } from "@langchain/core/embeddings";
@@ -22,10 +22,11 @@ class Embedder {
   private pipe: FeatureExtractionPipeline;
 
   async init(modelName: string) {
+    const config = await AutoConfig.from_pretrained(modelName);
     this.pipe = await pipeline(
       "feature-extraction",
       modelName,
-      { quantized: false }
+      { dtype: "fp32", config }
     );
   }
 

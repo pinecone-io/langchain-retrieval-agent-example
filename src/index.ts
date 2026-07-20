@@ -6,7 +6,6 @@ import { getEnv } from "utils/util.ts";
 import { getPineconeClient } from "utils/pinecone.ts";
 import cliProgress from "cli-progress";
 import { Document } from "@langchain/core/documents";
-import * as dfd from "danfojs-node";
 import { embedder } from "embeddings.ts";
 import { SquadRecord, loadSquad } from "./utils/squadLoader.js";
 
@@ -25,17 +24,10 @@ const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_cla
 const indexName = getEnv("PINECONE_INDEX");
 const pinecone = getPineconeClient();
 
-
-async function getChunk(df: dfd.DataFrame, start: number, size: number): Promise<dfd.DataFrame> {
-  // eslint-disable-next-line no-return-await
-  return await df.head(start + size).tail(size);
-}
-
-async function* processInChunks(dataFrame: dfd.DataFrame, chunkSize: number): AsyncGenerator<Document[]> {
-  for (let i = 0; i < dataFrame.shape[0]; i += chunkSize) {
-    const chunk = await getChunk(dataFrame, i, chunkSize);
-    const records = dfd.toJSON(chunk) as SquadRecord[];
-    yield records.map((record: SquadRecord) => new Document({
+function* processInChunks(records: SquadRecord[], chunkSize: number): Generator<Document[]> {
+  for (let i = 0; i < records.length; i += chunkSize) {
+    const chunk = records.slice(i, i + chunkSize);
+    yield chunk.map((record: SquadRecord) => new Document({
       pageContent: record.context,
       metadata: {
         id: record["id"],
@@ -47,11 +39,11 @@ async function* processInChunks(dataFrame: dfd.DataFrame, chunkSize: number): As
   }
 }
 
-async function embedAndUpsert(dataFrame: dfd.DataFrame, chunkSize: number) {
-  const chunkGenerator = processInChunks(dataFrame, chunkSize);
+async function embedAndUpsert(records: SquadRecord[], chunkSize: number) {
+  const chunkGenerator = processInChunks(records, chunkSize);
   const index = pinecone.index({ name: indexName }).namespace(NAMESPACE);
 
-  for await (const documents of chunkGenerator) {
+  for (const documents of chunkGenerator) {
     await embedder.embedBatch(documents, chunkSize, async (embeddings: PineconeRecord[]) => {
       await index.upsert({ records: embeddings });
       progressBar.increment(embeddings.length);
@@ -61,7 +53,6 @@ async function embedAndUpsert(dataFrame: dfd.DataFrame, chunkSize: number) {
 
 try {
   const squadData = await loadSquad();
-  // squadData.print();
   // Idempotent: `suppressConflicts` makes this a no-op if the index already
   // exists, and `waitUntilReady` blocks until it can accept upserts.
   await pinecone.createIndex({
@@ -72,12 +63,12 @@ try {
     waitUntilReady: true,
     suppressConflicts: true,
   });
-  progressBar.start(squadData.shape[0], 0);
+  progressBar.start(squadData.length, 0);
   await embedder.init("Xenova/all-MiniLM-L6-v2");
   await embedAndUpsert(squadData, UPSERT_BATCH_SIZE);
 
   progressBar.stop();
-  console.log(`Inserted ${progressBar.getTotal()} documents into index ${indexName}`);
+  console.log(`Inserted ${squadData.length} documents into index ${indexName}`);
 
 } catch (error) {
   console.error(error);

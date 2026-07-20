@@ -1,11 +1,17 @@
-import * as dfd from "danfojs-node";
-import { dataFrameFromURL, dropDuplicates } from "./dataLoader.js";
+import { rowsFromURL, dropDuplicatesBy } from "./dataLoader.js";
 
 const url =
   "https://rajpurkar.github.io/SQuAD-explorer/dataset/train-v1.1.json";
 
-const loadSquad = async (): Promise<dfd.DataFrame> => {
-  const df: dfd.DataFrame = await dataFrameFromURL(
+interface SquadRecord {
+  context: string;
+  id: string;
+  question: string;
+  answer: string;
+}
+
+const loadSquad = async (): Promise<SquadRecord[]> => {
+  const rows = await rowsFromURL(
     url,
     [
       "title",
@@ -17,20 +23,14 @@ const loadSquad = async (): Promise<dfd.DataFrame> => {
     ["paragraphs", "paragraphs.qas", "paragraphs.qas.answers"]
   );
 
-  df.rename({ "paragraphs.context": "context" }, { inplace: true });
-  df.rename({ "paragraphs.qas.id": "id" }, { inplace: true });
-  df.rename({ "paragraphs.qas.question": "question" }, { inplace: true });
-  df.rename({ "paragraphs.qas.answers.text": "answer" }, { inplace: true });
+  const records: SquadRecord[] = rows.map((row) => ({
+    context: row["paragraphs.context"],
+    id: row["paragraphs.qas.id"],
+    question: row["paragraphs.qas.question"],
+    answer: row["paragraphs.qas.answers.text"],
+  }));
 
-  const cleanDf = dropDuplicates(df, "context");
-  return cleanDf;
+  return dropDuplicatesBy(records, "context");
 };
-
-interface SquadRecord {
-  context: string;
-  id: string;
-  question: string;
-  answer: string;
-}
 
 export { loadSquad, SquadRecord };
