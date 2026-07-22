@@ -5,10 +5,11 @@ import type { PineconeRecord } from "@pinecone-database/pinecone";
 // without downloading a model or running inference. The mock returns a fixed
 // 3-dim embedding regardless of input.
 const MOCK_EMBEDDING = [0.1, 0.2, 0.3];
-vi.mock("@xenova/transformers", () => ({
+vi.mock("@huggingface/transformers", () => ({
   pipeline: vi.fn(async () => async (_text: string) => ({
     data: Float32Array.from(MOCK_EMBEDDING),
   })),
+  AutoConfig: { from_pretrained: vi.fn(async () => ({})) },
 }));
 
 // Imported after the mock is registered.

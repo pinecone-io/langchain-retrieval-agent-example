@@ -15,7 +15,10 @@ export const getPineconeClient = (): Pinecone => {
   if (pinecone) {
     return pinecone;
   }
-  pinecone = new Pinecone({ apiKey: getEnv("PINECONE_API_KEY") });
+  pinecone = new Pinecone({
+    apiKey: getEnv("PINECONE_API_KEY"),
+    sourceTag: "pinecone:langchain_retrieval_agent_example",
+  });
 
   return pinecone;
 };

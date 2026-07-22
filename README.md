@@ -16,20 +16,36 @@ To do so, simply run the following command:
 npm install
 ```
 
+## Configuration
+
+This example needs both a Pinecone and an OpenAI API key. Copy the template file:
+
+```sh
+cp .env.example .env
+```
+
+And fill in your keys and index name:
+
+```sh
+OPENAI_API_KEY=<your-openai-api-key>
+PINECONE_API_KEY=<your-pinecone-api-key>
+PINECONE_INDEX="langchain-retrieval-agent"
+```
+
 ## Importing the Libraries
 
-We'll start by importing the necessary libraries. We'll be using the `@pinecone-database/pinecone` library to interact with Pinecone. We'll also be using the `danfojs-node` library to load the data into an easy to manipulate dataframe. We'll use the `Document` type from Langchain to keep the data structure consistent across the indexing process and retrieval agent.
+We'll start by importing the necessary libraries. We'll be using the `@pinecone-database/pinecone` library to interact with Pinecone. We'll also be using the `danfojs-node` library to load the data into an easy to manipulate dataframe. We'll use the `Document` type from `@langchain/core` to keep the data structure consistent across the indexing process and retrieval agent.
 
-We'll be using the `Embedder` class found in `embeddings.ts` to embed the data We'll also be using the `cli-progress` library to display a progress bar.
+We'll be using the `Embedder` class found in `embeddings.ts` to embed the data. We'll also be using the `cli-progress` library to display a progress bar.
 
-To load the dataset used in the example, we'll be using a utility called `squadLoader.js`.
+To load the dataset used in the example, we'll be using a utility called `squadLoader.ts`.
 
 ```typescript
-import { Vector, utils } from "@pinecone-database/pinecone";
+import { PineconeRecord } from "@pinecone-database/pinecone";
 import { getEnv } from "utils/util.ts";
 import { getPineconeClient } from "utils/pinecone.ts";
 import cliProgress from "cli-progress";
-import { Document } from "langchain/document";
+import { Document } from "@langchain/core/documents";
 import * as dfd from "danfojs-node";
 import { embedder } from "embeddings.ts";
 import { SquadRecord, loadSquad } from "./utils/squadLoader.js";
@@ -37,7 +53,7 @@ import { SquadRecord, loadSquad } from "./utils/squadLoader.js";
 
 ## Building the Knowledge Base
 
-We start by constructing our knowledge base. We'll use a mostly prepared dataset called Stanford Question-Answering Dataset (SQuAD) hosted on Hugging Face Datasets. We download using a simple data-loading utility library. The data will be loaded into a `Danfo` dataframe.
+We start by constructing our knowledge base. We'll use a mostly prepared dataset called Stanford Question-Answering Dataset (SQuAD), downloaded directly from its host. The data will be loaded into a `Danfo` dataframe.
 
 ```typescript
 const squadData = await loadSquad();
@@ -48,176 +64,132 @@ progressBar.start(squadData.shape[0], 0);
 Since the dataset could be pretty big, we'll use a generator function that will yield chunks of data to be processed.
 
 ```typescript
-async function* processInChunks(
-  dataFrame: dfd.DataFrame,
-  chunkSize: number
-): AsyncGenerator<Document[]> {
+async function* processInChunks(dataFrame: dfd.DataFrame, chunkSize: number): AsyncGenerator<Document[]> {
   for (let i = 0; i < dataFrame.shape[0]; i += chunkSize) {
     const chunk = await getChunk(dataFrame, i, chunkSize);
     const records = dfd.toJSON(chunk) as SquadRecord[];
-    yield records.map(
-      (record: SquadRecord) =>
-        new Document({
-          pageContent: record.context,
-          metadata: {
-            id: record["id"],
-            question: record["question"],
-            answer: record["answer"],
-          },
-        })
-    );
+    yield records.map((record: SquadRecord) => new Document({
+      pageContent: record.context,
+      metadata: {
+        id: record["id"],
+        question: record["question"],
+        answer: record["answer"],
+        context: record["context"],
+      },
+    }));
   }
 }
 ```
 
-Next we'll create a funciton that will generate the embeddings and upsert them into Pinecone. We'll use the `processInChunks` generator function to process the data in chunks. We'll also use the `chunkedUpsert` method to insert the embeddings into Pinecone in batches.
+Next we'll create a function that will generate the embeddings and upsert them into Pinecone. We'll use the `processInChunks` generator function to process the data in chunks.
 
 ```typescript
 async function embedAndUpsert(dataFrame: dfd.DataFrame, chunkSize: number) {
   const chunkGenerator = processInChunks(dataFrame, chunkSize);
-  const index = pineconeClient.Index(indexName);
+  const index = pinecone.index({ name: indexName }).namespace(NAMESPACE);
 
   for await (const documents of chunkGenerator) {
-    await embedder.embedBatch(
-      documents,
-      chunkSize,
-      async (embeddings: Vector[]) => {
-        await chunkedUpsert(index, embeddings, "default");
-        progressBar.increment(embeddings.length);
-      }
-    );
+    await embedder.embedBatch(documents, chunkSize, async (embeddings: PineconeRecord[]) => {
+      await index.upsert({ records: embeddings });
+      progressBar.increment(embeddings.length);
+    });
   }
 }
 ```
 
-Next, we'll set up the index, initialize the embedder and call `embedAndUpsert` to start the process.
+Next, we'll set up the index, initialize the embedder and call `embedAndUpsert` to start the process. Run this with `npm run index`:
 
 ```typescript
-try {
-  const squadData = await loadSquad();
-  await createIndexIfNotExists(pineconeClient, indexName, 384);
+const squadData = await loadSquad();
+await pinecone.createIndex({
+  name: indexName,
+  dimension: EMBEDDING_DIMENSION,
+  metric: "cosine",
+  spec: { serverless: { cloud: "aws", region: "us-east-1" } },
+  waitUntilReady: true,
+  suppressConflicts: true,
+});
+progressBar.start(squadData.shape[0], 0);
+await embedder.init("Xenova/all-MiniLM-L6-v2");
+await embedAndUpsert(squadData, UPSERT_BATCH_SIZE);
 
-  progressBar.start(squadData.shape[0], 0);
-
-  await embedder.init("Xenova/all-MiniLM-L6-v2");
-  await embedAndUpsert(squadData, 100);
-
-  progressBar.stop();
-  console.log(
-    `Inserted ${progressBar.getTotal()} documents into index ${indexName}`
-  );
-} catch (error) {
-  console.error(error);
-}
+progressBar.stop();
+console.log(`Inserted ${squadData.shape[0]} documents into index ${indexName}`);
 ```
+
+```sh
+npm run index
+```
+
+The SQuAD dataset has around 19,000 unique passages after deduplication, so expect this to take a few minutes.
 
 ## Retrieval Agent
 
-Now that we've build our index we can switch back over to LangChain. We start by initializing a vector store using the same index we just built. We do that like so:
+Now that we've built our index we can switch back over to LangChain. We start by initializing a vector store using the same index we just built, reading the passage text back from the `context` metadata field it was upserted under:
 
 ```typescript
-import { TransformersJSEmbedding } from "embeddings.ts";
-import { PineconeStore } from "langchain/vectorstores/pinecone";
+import { PineconeStore } from "@langchain/pinecone";
 import { getPineconeClient } from "utils/pinecone.ts";
+import { TransformersJSEmbedding } from "embeddings.ts";
 
 const indexName = getEnv("PINECONE_INDEX");
-
-const pineconeClient = await getPineconeClient();
-const pineconeIndex = pineconeClient.Index(indexName);
+const pinecone = getPineconeClient();
+const pineconeIndex = pinecone.index({ name: indexName });
 
 const vectorStore = await PineconeStore.fromExistingIndex(
   new TransformersJSEmbedding({
     modelName: "Xenova/all-MiniLM-L6-v2",
   }),
-  { pineconeIndex }
+  { pineconeIndex, namespace: "default", textKey: "context" },
 );
 ```
 
-We can use the `similaritySearch` method to do a pure semantic search (without the generation component).
+Next, we retrieve the most relevant passages for a query and expose them to the agent as a tool via `createRetrieverTool`:
 
 ```typescript
-const result = await vectorStore.similaritySearch(
-  "when was the college of engineering in the University of Notre Dame established?",
-  3
-);
-console.log(result);
-```
+import { createRetrieverTool } from "@langchain/classic/tools/retriever";
 
-We should see the following results:
+const retriever = vectorStore.asRetriever(4);
 
-```json
-[
-  {
-    "answer": "a Marian place of prayer and reflection",
-    "context": "The College of Engineering was established in 1920, however, early courses in civil and mechanical engineering were a part of the College of Science since the 1870s. Today the college, housed in the Fitzpatrick, Cushing, and Stinson-Remick Halls of Engineering, includes five departments of study – aerospace and mechanical engineering, chemical and biomolecular engineering, civil engineering and geological sciences, computer science and engineering, and electrical engineering – with eight B.S. degrees offered. Additionally, the college offers five-year dual degree programs with the Colleges of Arts and Letters and of Business awarding additional B.A. and Master of Business Administration (MBA) degrees, respectively.",
-    "id": "5733be284776f41900661181",
-    "question": "What is the Grotto at Notre Dame?"
-  },
-  {
-    "answer": "a golden statue of the Virgin Mary",
-    "context": "All of Notre Dame's undergraduate students are a part of one of the five undergraduate colleges at the school or are in the First Year of Studies program. The First Year of Studies program was established in 1962 to guide incoming freshmen in their first year at the school before they have declared a major. Each student is given an academic advisor from the program who helps them to choose classes that give them exposure to any major in which they are interested. The program also includes a Learning Resource Center which provides time management, collaborative learning, and subject tutoring. This program has been recognized previously, by U.S. News & World Report, as outstanding.",
-    "id": "5733be284776f4190066117e",
-    "question": "What sits on top of the Main Building at Notre Dame?"
-  },
-  {
-    "answer": "the 1870s",
-    "context": "In 1919 Father James Burns became president of Notre Dame, and in three years he produced an academic revolution that brought the school up to national standards by adopting the elective system and moving away from the university's traditional scholastic and classical emphasis. By contrast, the Jesuit colleges, bastions of academic conservatism, were reluctant to move to a system of electives. Their graduates were shut out of Harvard Law School for that reason. Notre Dame continued to grow over the years, adding more colleges, programs, and sports teams. By 1921, with the addition of the College of Commerce, Notre Dame had grown from a small college to a university with five colleges and a professional law school. The university continued to expand and add new residence halls and buildings with each subsequent president.",
-    "id": "5733a6424776f41900660f52",
-    "question": "The College of Science began to offer civil engineering courses beginning at what time at Notre Dame?"
-  }
-]
-```
-
-Looks like we're getting good results. Let's take a look at how we can begin integrating this into a conversational agent.
-
-First, we'll create a `Vector Store` that will use the same embedding model as the one we used to build the index.
-
-```typescript
-const vectorStore = await PineconeStore.fromExistingIndex(
-  new TransformersJSEmbedding({
-    modelName: "Xenova/all-MiniLM-L6-v2",
-  }),
-  { pineconeIndex, namespace: "default", textKey: "context" }
-);
-```
-
-Next, we'll initialize the tools used by the agent. Those will required a `model` (such as `OpenAI`) that will be responsible to generating the response. We'll combine the two by using a chain called `VectorDBQAChain`:
-
-```typescript
-const model = new OpenAI({});
-
-const chain = VectorDBQAChain.fromLLM(model, vectorStore);
-
-const kbTool = new ChainTool({
-  name: "Knowledge Base",
+const knowledgeBaseTool = createRetrieverTool(retriever, {
+  name: "knowledge_base",
   description:
-    "use this tool when answering general knowledge queries to get more information about the topic",
-  chain,
+    "Search the knowledge base for background information when answering general knowledge questions about a topic.",
 });
 ```
 
-Finally, we'll create the agent executor that'll combine the model and the vector store tool:
+Finally, we combine an OpenAI chat model with the tool using `createAgent` — a LangGraph-based agent that wires the model to its tools and runs the reason/act loop internally:
 
 ```typescript
-const executor = await initializeAgentExecutorWithOptions([kbTool], model, {
-  agentType: "zero-shot-react-description",
-});
-```
+import { ChatOpenAI } from "@langchain/openai";
+import { createAgent } from "langchain";
 
-Now we can use the executor to generate a response:
+const model = new ChatOpenAI({ model: "gpt-4o-mini", temperature: 0 });
+const agent = createAgent({ model, tools: [knowledgeBaseTool] });
 
-```typescript
 const input = "can you tell me some facts about the University of Notre Dame?";
-const result = await executor.call({ input });
-console.log(`${result.output}`);
+const result = await agent.invoke({ messages: [{ role: "user", content: input }] });
+
+const finalMessage = result.messages.at(-1);
+console.log(finalMessage?.content);
+```
+
+Run this with `npm run chat`:
+
+```sh
+npm run chat
 ```
 
 We should see something like this:
 
 ```
-The University of Notre Dame is a Catholic research university located in South Bend, Indiana, United States. It is consistently ranked among the top twenty universities in the United States. It has four colleges (Arts and Letters, Science, Engineering, Business) and an Architecture School. Its graduate program has more than 50 master's, doctoral and professional degree programs. It also has a First Year of Studies program and an Office of Sustainability. Father Gustavo Gutierrez, the founder of Liberation Theology is a current faculty member.
+Here are some interesting facts about the University of Notre Dame:
+
+1. **Location and Name**: The University of Notre Dame du Lac, commonly known as Notre Dame, is
+   located in South Bend, Indiana...
+...
 ```
 
-Looks great! We're also able to ask questions that refer to previous interactions in the conversation and the agent is able to refer to the conversation history to as a source of information.
+(The model's exact wording will vary between runs.)
 
-That's all for this example of building a retrieval augmented conversational agent with OpenAI and Pinecone (the OP stack) and LangChain.
+Looks great! That's all for this example of building a retrieval augmented conversational agent with OpenAI and Pinecone and LangChain.
