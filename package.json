@@ -47,7 +47,8 @@
   "overrides": {
     "@pinecone-database/pinecone": "^8.0.0",
     "rollup": "4.62.2",
-    "adm-zip": "^0.6.0"
+    "adm-zip": "^0.6.0",
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.2",
