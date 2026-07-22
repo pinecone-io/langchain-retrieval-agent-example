@@ -30,7 +30,10 @@ describe.skipIf(!hasCredentials)("live ingestion + retrieval", () => {
   let pinecone: Pinecone;
 
   beforeAll(() => {
-    pinecone = new Pinecone({ apiKey: apiKey! });
+    pinecone = new Pinecone({
+      apiKey: apiKey!,
+      sourceTag: "pinecone:langchain_retrieval_agent_example",
+    });
   });
 
   afterAll(async () => {
