@@ -1,7 +1,7 @@
-
-const sliceIntoChunks = <T>(arr: T[], chunkSize: number) => Array.from({ length: Math.ceil(arr.length / chunkSize) }, (_, i) =>
-  arr.slice(i * chunkSize, (i + 1) * chunkSize)
-);
+const sliceIntoChunks = <T>(arr: T[], chunkSize: number) =>
+  Array.from({ length: Math.ceil(arr.length / chunkSize) }, (_, i) =>
+    arr.slice(i * chunkSize, (i + 1) * chunkSize)
+  );
 
 export const getEnv = (key: string): string => {
   const value = process.env[key];
@@ -16,7 +16,4 @@ const validateEnvironmentVariables = () => {
   getEnv("PINECONE_INDEX");
 };
 
-export {
-  sliceIntoChunks,
-  validateEnvironmentVariables
-};
+export { sliceIntoChunks, validateEnvironmentVariables };

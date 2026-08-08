@@ -36,14 +36,14 @@ describe("getEnv", () => {
 
   it("throws a descriptive error when the variable is missing", () => {
     expect(() => getEnv(KEY)).toThrowError(
-      `${KEY} environment variable not set`,
+      `${KEY} environment variable not set`
     );
   });
 
   it("throws when the variable is set to an empty string", () => {
     process.env[KEY] = "";
     expect(() => getEnv(KEY)).toThrowError(
-      `${KEY} environment variable not set`,
+      `${KEY} environment variable not set`
     );
   });
 });

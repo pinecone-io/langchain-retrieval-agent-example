@@ -1,5 +1,9 @@
 import { randomUUID } from "crypto";
-import { FeatureExtractionPipeline, pipeline, AutoConfig } from "@huggingface/transformers";
+import {
+  FeatureExtractionPipeline,
+  pipeline,
+  AutoConfig,
+} from "@huggingface/transformers";
 import { PineconeRecord, RecordMetadata } from "@pinecone-database/pinecone";
 import { Document } from "@langchain/core/documents";
 import { EmbeddingsParams, Embeddings } from "@langchain/core/embeddings";
@@ -23,15 +27,17 @@ class Embedder {
 
   async init(modelName: string) {
     const config = await AutoConfig.from_pretrained(modelName);
-    this.pipe = await pipeline(
-      "feature-extraction",
-      modelName,
-      { dtype: "fp32", config }
-    );
+    this.pipe = await pipeline("feature-extraction", modelName, {
+      dtype: "fp32",
+      config,
+    });
   }
 
   // Embeds a text and returns the embedding
-  async embed(text: string, metadata?: Record<string, unknown>): Promise<PineconeRecord> {
+  async embed(
+    text: string,
+    metadata?: Record<string, unknown>
+  ): Promise<PineconeRecord> {
     const result = await this.pipe(text, POOLING_OPTIONS);
     const id = (metadata?.id as string) || randomUUID();
 
@@ -54,7 +60,10 @@ class Embedder {
         batch.map((documentOrString) =>
           isString(documentOrString)
             ? this.embed(documentOrString)
-            : this.embed(documentOrString.pageContent, documentOrString.metadata)
+            : this.embed(
+                documentOrString.pageContent,
+                documentOrString.metadata
+              )
         )
       );
       await onDoneBatch(embeddings);
@@ -67,7 +76,10 @@ interface TransformersJSEmbeddingParams extends EmbeddingsParams {
   onEmbeddingDone?: (embeddings: PineconeRecord[]) => void;
 }
 
-class TransformersJSEmbedding extends Embeddings implements TransformersJSEmbeddingParams {
+class TransformersJSEmbedding
+  extends Embeddings
+  implements TransformersJSEmbeddingParams
+{
   modelName: string;
 
   pipe: FeatureExtractionPipeline | null = null;
@@ -78,26 +90,23 @@ class TransformersJSEmbedding extends Embeddings implements TransformersJSEmbedd
   }
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
-    this.pipe = this.pipe || await pipeline(
-      "feature-extraction",
-      this.modelName
-    );
+    this.pipe =
+      this.pipe || (await pipeline("feature-extraction", this.modelName));
 
-    const embeddings = await Promise.all(texts.map(async (text) => this.embedQuery(text)));
+    const embeddings = await Promise.all(
+      texts.map(async (text) => this.embedQuery(text))
+    );
     return embeddings;
   }
 
   async embedQuery(text: string): Promise<number[]> {
-    this.pipe = this.pipe || await pipeline(
-      "feature-extraction",
-      this.modelName
-    );
+    this.pipe =
+      this.pipe || (await pipeline("feature-extraction", this.modelName));
 
     const result = await this.pipe(text, POOLING_OPTIONS);
     return Array.from(result.data as Float32Array) as number[];
   }
 }
-
 
 const embedder = new Embedder();
 export { embedder, TransformersJSEmbedding };
