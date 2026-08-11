@@ -18,24 +18,33 @@ const EMBEDDING_DIMENSION = 384;
 const UPSERT_BATCH_SIZE = 100;
 const NAMESPACE = "default";
 
-const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+const progressBar = new cliProgress.SingleBar(
+  {},
+  cliProgress.Presets.shades_classic
+);
 
 // Index setup
 const indexName = getEnv("PINECONE_INDEX");
 const pinecone = getPineconeClient();
 
-function* processInChunks(records: SquadRecord[], chunkSize: number): Generator<Document[]> {
+function* processInChunks(
+  records: SquadRecord[],
+  chunkSize: number
+): Generator<Document[]> {
   for (let i = 0; i < records.length; i += chunkSize) {
     const chunk = records.slice(i, i + chunkSize);
-    yield chunk.map((record: SquadRecord) => new Document({
-      pageContent: record.context,
-      metadata: {
-        id: record["id"],
-        question: record["question"],
-        answer: record["answer"],
-        context: record["context"],
-      },
-    }));
+    yield chunk.map(
+      (record: SquadRecord) =>
+        new Document({
+          pageContent: record.context,
+          metadata: {
+            id: record["id"],
+            question: record["question"],
+            answer: record["answer"],
+            context: record["context"],
+          },
+        })
+    );
   }
 }
 
@@ -44,10 +53,14 @@ async function embedAndUpsert(records: SquadRecord[], chunkSize: number) {
   const index = pinecone.index({ name: indexName }).namespace(NAMESPACE);
 
   for (const documents of chunkGenerator) {
-    await embedder.embedBatch(documents, chunkSize, async (embeddings: PineconeRecord[]) => {
-      await index.upsert({ records: embeddings });
-      progressBar.increment(embeddings.length);
-    });
+    await embedder.embedBatch(
+      documents,
+      chunkSize,
+      async (embeddings: PineconeRecord[]) => {
+        await index.upsert({ records: embeddings });
+        progressBar.increment(embeddings.length);
+      }
+    );
   }
 }
 
@@ -69,7 +82,6 @@ try {
 
   progressBar.stop();
   console.log(`Inserted ${squadData.length} documents into index ${indexName}`);
-
 } catch (error) {
   console.error(error);
 }

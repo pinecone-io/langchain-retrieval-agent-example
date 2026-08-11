@@ -48,9 +48,15 @@ describe.skipIf(!hasCredentials)("live ingestion + retrieval", () => {
   it("upserts embedded documents and retrieves the most relevant one", async () => {
     // Distinct facts so retrieval has an unambiguous best match to return.
     const documents = [
-      { id: "sky", text: "The sky appears blue because of Rayleigh scattering." },
+      {
+        id: "sky",
+        text: "The sky appears blue because of Rayleigh scattering.",
+      },
       { id: "grass", text: "Grass is green because it contains chlorophyll." },
-      { id: "sun", text: "The sun is a star at the center of the solar system." },
+      {
+        id: "sun",
+        text: "The sun is a star at the center of the solar system.",
+      },
     ];
 
     // `waitUntilReady` blocks until the index can accept upserts;
@@ -79,7 +85,7 @@ describe.skipIf(!hasCredentials)("live ingestion + retrieval", () => {
           v.metadata = { text: documents[i].text };
         });
         vectors.push(...embeddings);
-      },
+      }
     );
 
     await index.upsert({ records: vectors });
@@ -88,7 +94,9 @@ describe.skipIf(!hasCredentials)("live ingestion + retrieval", () => {
     // until all vectors are visible, instead of a single fixed sleep.
     await waitForVectorCount(index, documents.length);
 
-    const [queryVector] = await embedQuery("Why does the sky look blue during the day?");
+    const [queryVector] = await embedQuery(
+      "Why does the sky look blue during the day?"
+    );
     const result = await index.query({
       topK: 1,
       vector: queryVector,
@@ -108,7 +116,10 @@ describe.skipIf(!hasCredentials)("live ingestion + retrieval", () => {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async function waitForVectorCount(index: any, expected: number): Promise<void> {
+  async function waitForVectorCount(
+    index: any,
+    expected: number
+  ): Promise<void> {
     const maxAttempts = 20;
     let delayMs = 1000;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
@@ -119,7 +130,7 @@ describe.skipIf(!hasCredentials)("live ingestion + retrieval", () => {
       delayMs = Math.min(delayMs * 2, 8000); // exponential backoff, capped
     }
     throw new Error(
-      `Only ${expected} vectors expected but never became visible in index ${indexName}`,
+      `Only ${expected} vectors expected but never became visible in index ${indexName}`
     );
   }
 });

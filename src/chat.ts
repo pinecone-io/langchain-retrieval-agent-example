@@ -15,9 +15,9 @@ const pineconeIndex = pinecone.index({ name: indexName });
 // vector store reads it back from there.
 const vectorStore = await PineconeStore.fromExistingIndex(
   new TransformersJSEmbedding({
-    modelName: "Xenova/all-MiniLM-L6-v2"
+    modelName: "Xenova/all-MiniLM-L6-v2",
   }),
-  { pineconeIndex, namespace: "default", textKey: "context" },
+  { pineconeIndex, namespace: "default", textKey: "context" }
 );
 
 // Retrieve the 4 most relevant passages for a query and expose them as a tool.
@@ -41,7 +41,9 @@ const input = "can you tell me some facts about the University of Notre Dame?";
 
 console.log(`Executing with input "${input}"...`);
 
-const result = await agent.invoke({ messages: [{ role: "user", content: input }] });
+const result = await agent.invoke({
+  messages: [{ role: "user", content: input }],
+});
 
 // The final answer is the content of the last message the agent produced. It is
 // usually a plain string, but can be an array of content blocks.

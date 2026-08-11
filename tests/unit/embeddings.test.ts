@@ -45,7 +45,9 @@ describe("Embedder.embedBatch", () => {
     // Values round-trip through a Float32Array, so compare with tolerance
     // rather than for exact float equality.
     expect(collected[0].values).toHaveLength(MOCK_EMBEDDING.length);
-    collected[0].values.forEach((v, i) => expect(v).toBeCloseTo(MOCK_EMBEDDING[i], 5));
+    collected[0].values.forEach((v, i) =>
+      expect(v).toBeCloseTo(MOCK_EMBEDDING[i], 5)
+    );
     // A string document with no metadata falls back to storing its own text.
     expect(collected[0].metadata).toEqual({ text: "only-one" });
     expect(typeof collected[0].id).toBe("string");

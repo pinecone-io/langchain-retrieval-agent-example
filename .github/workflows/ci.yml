@@ -32,6 +32,8 @@ jobs:
 
       - run: npm run lint
 
+      - run: npm run format:check
+
       # `tsc --noEmit` is the real type check. This example runs from source via
       # `tsx`, so there is no bundler build step to smoke-test here.
       - run: npm run typecheck
