@@ -41,6 +41,9 @@ jobs:
       # Unit tests are credential-free and run on every push + PR.
       - run: npm run test:unit
 
+      # Fail the build on high/critical dependency vulnerabilities.
+      - run: npm audit --audit-level=high
+
   e2e:
     name: Live e2e (Pinecone)
     runs-on: ubuntu-latest
