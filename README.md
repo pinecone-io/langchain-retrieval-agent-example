@@ -1,131 +1,121 @@
 # LangChain Retrieval Agent
 
-Chatbots can struggle with data freshness, knowledge about specific domains, or accessing internal documentation. By coupling agents with retrieval augmentation tools we no longer have these problems.
+An example of a retrieval-augmented [LangChain](https://pinecone.io/learn/langchain) agent: it indexes the Stanford Question-Answering Dataset (SQuAD) into a [Pinecone](https://www.pinecone.io/) vector index, then answers questions by giving an OpenAI chat model a retriever tool over that index — so it can pull in relevant passages instead of relying on training data alone.
 
-One the other side, using "naive" retrieval augmentation without the use of an agent means we will retrieve contexts with every query. Again, this isn't always ideal as not every query requires access to external knowledge.
+## Prerequisites
 
-Merging these methods gives us the best of both worlds. Let's see how that is done.
+- Node.js 22+ and npm
+- A [Pinecone](https://app.pinecone.io/) account and API key
+- An [OpenAI](https://platform.openai.com/api-keys) API key
 
-(See our [LangChain Handbook](https://pinecone.io/learn/langchain) for more on LangChain).
+## Quickstart
 
-To begin, we must install the prerequisite libraries that we will be using in this applications.
-
-To do so, simply run the following command:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-## Configuration
+Copy the environment template and fill in your keys:
 
-This example needs both a Pinecone and an OpenAI API key. Copy the template file:
-
-```sh
+```bash
 cp .env.example .env
 ```
-
-And fill in your keys and index name:
 
 ```sh
 OPENAI_API_KEY=<your-openai-api-key>
 PINECONE_API_KEY=<your-pinecone-api-key>
-PINECONE_INDEX="langchain-retrieval-agent"
+PINECONE_INDEX=langchain-retrieval-agent
 ```
 
-## Importing the Libraries
+`PINECONE_INDEX` is created for you (if it doesn't already exist) by the next step — it doesn't need to exist beforehand.
 
-We'll start by importing the necessary libraries. We'll be using the `@pinecone-database/pinecone` library to interact with Pinecone. We'll also be using the `danfojs-node` library to load the data into an easy to manipulate dataframe. We'll use the `Document` type from `@langchain/core` to keep the data structure consistent across the indexing process and retrieval agent.
+Build the index — downloads SQuAD, embeds ~19,000 deduplicated passages locally, and upserts them into Pinecone (this takes a few minutes):
 
-We'll be using the `Embedder` class found in `embeddings.ts` to embed the data. We'll also be using the `cli-progress` library to display a progress bar.
-
-To load the dataset used in the example, we'll be using a utility called `squadLoader.ts`.
-
-```typescript
-import { PineconeRecord } from "@pinecone-database/pinecone";
-import { getEnv } from "utils/util.ts";
-import { getPineconeClient } from "utils/pinecone.ts";
-import cliProgress from "cli-progress";
-import { Document } from "@langchain/core/documents";
-import * as dfd from "danfojs-node";
-import { embedder } from "embeddings.ts";
-import { SquadRecord, loadSquad } from "./utils/squadLoader.js";
-```
-
-## Building the Knowledge Base
-
-We start by constructing our knowledge base. We'll use a mostly prepared dataset called Stanford Question-Answering Dataset (SQuAD), downloaded directly from its host. The data will be loaded into a `Danfo` dataframe.
-
-```typescript
-const squadData = await loadSquad();
-// Start the progress bar
-progressBar.start(squadData.shape[0], 0);
-```
-
-Since the dataset could be pretty big, we'll use a generator function that will yield chunks of data to be processed.
-
-```typescript
-async function* processInChunks(dataFrame: dfd.DataFrame, chunkSize: number): AsyncGenerator<Document[]> {
-  for (let i = 0; i < dataFrame.shape[0]; i += chunkSize) {
-    const chunk = await getChunk(dataFrame, i, chunkSize);
-    const records = dfd.toJSON(chunk) as SquadRecord[];
-    yield records.map((record: SquadRecord) => new Document({
-      pageContent: record.context,
-      metadata: {
-        id: record["id"],
-        question: record["question"],
-        answer: record["answer"],
-        context: record["context"],
-      },
-    }));
-  }
-}
-```
-
-Next we'll create a function that will generate the embeddings and upsert them into Pinecone. We'll use the `processInChunks` generator function to process the data in chunks.
-
-```typescript
-async function embedAndUpsert(dataFrame: dfd.DataFrame, chunkSize: number) {
-  const chunkGenerator = processInChunks(dataFrame, chunkSize);
-  const index = pinecone.index({ name: indexName }).namespace(NAMESPACE);
-
-  for await (const documents of chunkGenerator) {
-    await embedder.embedBatch(documents, chunkSize, async (embeddings: PineconeRecord[]) => {
-      await index.upsert({ records: embeddings });
-      progressBar.increment(embeddings.length);
-    });
-  }
-}
-```
-
-Next, we'll set up the index, initialize the embedder and call `embedAndUpsert` to start the process. Run this with `npm run index`:
-
-```typescript
-const squadData = await loadSquad();
-await pinecone.createIndex({
-  name: indexName,
-  dimension: EMBEDDING_DIMENSION,
-  metric: "cosine",
-  spec: { serverless: { cloud: "aws", region: "us-east-1" } },
-  waitUntilReady: true,
-  suppressConflicts: true,
-});
-progressBar.start(squadData.shape[0], 0);
-await embedder.init("Xenova/all-MiniLM-L6-v2");
-await embedAndUpsert(squadData, UPSERT_BATCH_SIZE);
-
-progressBar.stop();
-console.log(`Inserted ${squadData.shape[0]} documents into index ${indexName}`);
-```
-
-```sh
+```bash
 npm run index
 ```
 
-The SQuAD dataset has around 19,000 unique passages after deduplication, so expect this to take a few minutes.
+Ask the agent a question:
 
-## Retrieval Agent
+```bash
+npm run chat
+```
 
-Now that we've built our index we can switch back over to LangChain. We start by initializing a vector store using the same index we just built, reading the passage text back from the `context` metadata field it was upserted under:
+You should see something like:
+
+```
+Here are some interesting facts about the University of Notre Dame:
+
+1. **Location and Name**: The University of Notre Dame du Lac, commonly known as Notre Dame, is
+   located in South Bend, Indiana...
+...
+```
+
+(The model's exact wording will vary between runs.)
+
+## How it works
+
+### Building the knowledge base (`npm run index`)
+
+`squadLoader.ts` downloads the SQuAD JSON, flattens it into rows (one per question/passage pair) via `dataLoader.ts`, and deduplicates by passage text. `index.ts` calls it to load the full dataset into memory:
+
+```typescript
+import { loadSquad } from "./utils/squadLoader.js";
+
+const squadData = await loadSquad();
+```
+
+Since the dataset is large, `index.ts` embeds and upserts it in batches via a generator that yields chunks of `Document`s:
+
+```typescript
+function* processInChunks(
+  records: SquadRecord[],
+  chunkSize: number
+): Generator<Document[]> {
+  for (let i = 0; i < records.length; i += chunkSize) {
+    const chunk = records.slice(i, i + chunkSize);
+    yield chunk.map(
+      (record: SquadRecord) =>
+        new Document({
+          pageContent: record.context,
+          metadata: {
+            id: record["id"],
+            question: record["question"],
+            answer: record["answer"],
+            context: record["context"],
+          },
+        })
+    );
+  }
+}
+```
+
+Each chunk is embedded locally (via `@huggingface/transformers`, no external embedding API needed) and upserted into Pinecone:
+
+```typescript
+async function embedAndUpsert(records: SquadRecord[], chunkSize: number) {
+  const chunkGenerator = processInChunks(records, chunkSize);
+  const index = pinecone.index({ name: indexName }).namespace(NAMESPACE);
+
+  for (const documents of chunkGenerator) {
+    await embedder.embedBatch(
+      documents,
+      chunkSize,
+      async (embeddings: PineconeRecord[]) => {
+        await index.upsert({ records: embeddings });
+        progressBar.increment(embeddings.length);
+      }
+    );
+  }
+}
+```
+
+`index.ts` ties this together: it creates the index if needed, initializes the embedder, and runs `embedAndUpsert` over the full dataset — this is the entry point for `npm run index`.
+
+### Retrieval agent (`npm run chat`)
+
+`chat.ts` opens a vector store on the same index, reading the passage text back from the `context` metadata field it was upserted under:
 
 ```typescript
 import { PineconeStore } from "@langchain/pinecone";
@@ -144,7 +134,7 @@ const vectorStore = await PineconeStore.fromExistingIndex(
 );
 ```
 
-Next, we retrieve the most relevant passages for a query and expose them to the agent as a tool via `createRetrieverTool`:
+It then wraps the vector store's retriever as a tool via `createRetrieverTool`:
 
 ```typescript
 import { createRetrieverTool } from "@langchain/classic/tools/retriever";
@@ -158,7 +148,7 @@ const knowledgeBaseTool = createRetrieverTool(retriever, {
 });
 ```
 
-Finally, we combine an OpenAI chat model with the tool using `createAgent` — a LangGraph-based agent that wires the model to its tools and runs the reason/act loop internally:
+Finally, it combines an OpenAI chat model with the tool using `createAgent` — a LangGraph-based agent that wires the model to its tools and runs the reason/act loop internally:
 
 ```typescript
 import { ChatOpenAI } from "@langchain/openai";
@@ -174,22 +164,4 @@ const finalMessage = result.messages.at(-1);
 console.log(finalMessage?.content);
 ```
 
-Run this with `npm run chat`:
-
-```sh
-npm run chat
-```
-
-We should see something like this:
-
-```
-Here are some interesting facts about the University of Notre Dame:
-
-1. **Location and Name**: The University of Notre Dame du Lac, commonly known as Notre Dame, is
-   located in South Bend, Indiana...
-...
-```
-
-(The model's exact wording will vary between runs.)
-
-Looks great! That's all for this example of building a retrieval augmented conversational agent with OpenAI and Pinecone and LangChain.
+That's all for this example of building a retrieval-augmented conversational agent with OpenAI, Pinecone, and LangChain.
