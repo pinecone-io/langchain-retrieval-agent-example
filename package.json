@@ -36,7 +36,7 @@
     "@langchain/pinecone": "^1.0.3",
     "@pinecone-database/pinecone": "^8.0.0",
     "@huggingface/transformers": "^4.2.0",
-    "chalk": "^5.2.0",
+    "chalk": "^6.0.0",
     "cli-progress": "^3.12.0",
     "cross-fetch": "^3.1.6",
     "dotenv": "^16.1.3",
