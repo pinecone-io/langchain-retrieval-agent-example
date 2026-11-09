@@ -30,7 +30,7 @@
   "author": "Pinecone",
   "license": "MIT",
   "dependencies": {
-    "@langchain/classic": "^1.0.40",
+    "@langchain/classic": "^1.0.57",
     "@langchain/core": "^1.2.2",
     "@langchain/openai": "^1.5.5",
     "@langchain/pinecone": "^1.0.3",
