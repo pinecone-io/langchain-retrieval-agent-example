@@ -154,7 +154,10 @@ Finally, it combines an OpenAI chat model with the tool using `createAgent` — 
 import { ChatOpenAI } from "@langchain/openai";
 import { createAgent } from "langchain";
 
-const model = new ChatOpenAI({ model: "gpt-4o-mini", temperature: 0 });
+const model = new ChatOpenAI({
+  model: "gpt-6-luna",
+  modelKwargs: { reasoning_effort: "none" },
+});
 const agent = createAgent({ model, tools: [knowledgeBaseTool] });
 
 const input = "can you tell me some facts about the University of Notre Dame?";

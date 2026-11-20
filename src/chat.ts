@@ -29,7 +29,10 @@ const knowledgeBaseTool = createRetrieverTool(retriever, {
     "Search the knowledge base for background information when answering general knowledge questions about a topic.",
 });
 
-const model = new ChatOpenAI({ model: "gpt-4o-mini", temperature: 0 });
+const model = new ChatOpenAI({
+  model: "gpt-6-luna",
+  modelKwargs: { reasoning_effort: "none" },
+});
 
 // v1 agents are LangGraph-based; createAgent wires the chat model to the tools
 // and runs the reason/act loop internally (replacing the removed
